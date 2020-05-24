@@ -499,10 +499,12 @@ inline XMVECTOR XM_CALLCONV XMLoadFloat3(const XMFLOAT3* pSource) noexcept
     __m128 xy = _mm_castpd_ps(_mm_load_sd(reinterpret_cast<const double*>(pSource)));
     __m128 z = _mm_load_ss(&pSource->z);
     return _mm_insert_ps(xy, z, 0x20);
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128 xy = _mm_castpd_ps(_mm_load_sd(reinterpret_cast<const double*>(pSource)));
     __m128 z = _mm_load_ss(&pSource->z);
     return _mm_movelh_ps(xy, z);
+#elif defined(_XM_SSE_INTRINSICS_)
+    return XMVectorSet(pSource->x, pSource->y, pSource->z, 0.f);
 #endif
 }
 

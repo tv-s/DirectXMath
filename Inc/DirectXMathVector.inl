@@ -192,9 +192,12 @@ inline XMVECTOR XM_CALLCONV XMVectorTrueInt() noexcept
     return vResult.v;
 #elif defined(_XM_ARM_NEON_INTRINSICS_)
     return vreinterpretq_f32_s32(vdupq_n_s32(-1));
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128i V = _mm_set1_epi32(-1);
     return _mm_castsi128_ps(V);
+#elif defined(_XM_SSE_INTRINSICS_)
+    const XMVECTORU32 res = {{{0xffffffffu, 0xffffffffu, 0xffffffffu, 0xffffffffu}}};
+    return res.v;
 #endif
 }
 
@@ -1358,12 +1361,24 @@ inline XMVECTOR XM_CALLCONV XMVectorSelectControl
     uint32_t VectorIndex3
 ) noexcept
 {
-#if defined(_XM_SSE_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
+#if defined(_XM_SSE2_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
     // x=Index0,y=Index1,z=Index2,w=Index3
     __m128i vTemp = _mm_set_epi32(static_cast<int>(VectorIndex3), static_cast<int>(VectorIndex2), static_cast<int>(VectorIndex1), static_cast<int>(VectorIndex0));
     // Any non-zero entries become 0xFFFFFFFF else 0
     vTemp = _mm_cmpgt_epi32(vTemp, g_XMZero);
     return _mm_castsi128_ps(vTemp);
+#elif defined(_XM_SSE_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
+    constexpr uint32_t ControlElement[] =
+    {
+        XM_SELECT_0,
+        XM_SELECT_1
+    };
+    alignas(16) uint32_t res[4];
+    res[0] = ControlElement[VectorIndex0];
+    res[1] = ControlElement[VectorIndex1];
+    res[2] = ControlElement[VectorIndex2];
+    res[3] = ControlElement[VectorIndex3];
+    return _mm_load_ps(reinterpret_cast<const float*>(res));
 #elif defined(_XM_ARM_NEON_INTRINSICS_) && !defined(_XM_NO_INTRINSICS_)
     int32x2_t V0 = vcreate_s32(static_cast<uint64_t>(VectorIndex0) | (static_cast<uint64_t>(VectorIndex1) << 32));
     int32x2_t V1 = vcreate_s32(static_cast<uint64_t>(VectorIndex2) | (static_cast<uint64_t>(VectorIndex3) << 32));
@@ -2636,9 +2651,20 @@ inline XMVECTOR XM_CALLCONV XMVectorOrInt
 
 #elif defined(_XM_ARM_NEON_INTRINSICS_)
     return vreinterpretq_f32_u32(vorrq_u32(vreinterpretq_u32_f32(V1), vreinterpretq_u32_f32(V2)));
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128i V = _mm_or_si128(_mm_castps_si128(V1), _mm_castps_si128(V2));
     return _mm_castsi128_ps(V);
+#elif defined(_XM_SSE_INTRINSICS_)
+    alignas(16) int32_t data0[4];
+    alignas(16) int32_t data1[4];
+    alignas(16) int32_t res[4];
+    _mm_store_ps(reinterpret_cast<float*>(data0), V1);
+    _mm_store_ps(reinterpret_cast<float*>(data1), V2);
+    res[0] = data0[0] | data1[0];
+    res[1] = data0[1] | data1[1];
+    res[2] = data0[2] | data1[2];
+    res[3] = data0[3] | data1[3];
+    return _mm_load_ps(reinterpret_cast<const float*>(res));
 #endif
 }
 
@@ -12982,9 +13008,15 @@ inline bool XM_CALLCONV XMVector4NotEqualInt
     uint8x8x2_t vTemp = vzip_u8(vget_low_u8(vreinterpretq_u8_u32(vResult)), vget_high_u8(vreinterpretq_u8_u32(vResult)));
     uint16x4x2_t vTemp2 = vzip_u16(vreinterpret_u16_u8(vTemp.val[0]), vreinterpret_u16_u8(vTemp.val[1]));
     return (vget_lane_u32(vreinterpret_u32_u16(vTemp2.val[1]), 1) != 0xFFFFFFFFU);
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128i vTemp = _mm_cmpeq_epi32(_mm_castps_si128(V1), _mm_castps_si128(V2));
     return ((_mm_movemask_ps(_mm_castsi128_ps(vTemp)) != 0xF) != 0);
+#elif defined(_XM_SSE_INTRINSICS_)
+    alignas(16) int32_t data0[4];
+    alignas(16) int32_t data1[4];
+    _mm_store_ps(reinterpret_cast<float*>(data0), V1);
+    _mm_store_ps(reinterpret_cast<float*>(data1), V2);
+    return (((data0[0] != data1[0]) || (data0[1] != data1[1]) || (data0[2] != data1[2]) || (data0[3] != data1[3])) != 0);
 #else
     return XMComparisonAnyFalse(XMVector4EqualIntR(V1, V2));
 #endif

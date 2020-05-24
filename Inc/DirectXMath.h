@@ -23,6 +23,15 @@
 #define _XM_VECTORCALL_ 1
 #endif
 
+#ifdef _XBOX
+#ifndef _XM_VECTORCALL_
+#define _XM_VECTORCALL_ 1
+#endif
+#ifndef _XM_DISABLE_INTEL_SVML_
+#define _XM_DISABLE_INTEL_SVML_
+#endif
+#endif
+
 #if _XM_VECTORCALL_
 #define XM_CALLCONV __vectorcall
 #elif defined(__GNUC__)
@@ -76,6 +85,10 @@
 #endif
 
 #if defined(_XM_SSE3_INTRINSICS_) && !defined(_XM_SSE_INTRINSICS_)
+#define _XM_SSE2_INTRINSICS_
+#endif
+
+#if defined(_XM_SSE2_INTRINSICS_) && !defined(_XM_SSE_INTRINSICS_)
 #define _XM_SSE_INTRINSICS_
 #endif
 
@@ -88,6 +101,10 @@
 #error DirectX Math does not support this target
 #endif
 #endif // !_XM_ARM_NEON_INTRINSICS_ && !_XM_SSE_INTRINSICS_ && !_XM_NO_INTRINSICS_
+
+#if defined(_XBOX) && defined(_XM_SSE2_INTRINSICS_)
+static_assert(false, "Xbox doesn't support SSE2");
+#endif
 
 #if defined(_XM_SSE_INTRINSICS_) && defined(_MSC_VER) && (_MSC_VER >= 1920) && !defined(__clang__) && !defined(_XM_SVML_INTRINSICS_) && !defined(_XM_DISABLE_INTEL_SVML_)
 #define _XM_SVML_INTRINSICS_
