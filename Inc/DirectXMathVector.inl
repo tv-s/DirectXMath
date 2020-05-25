@@ -12864,9 +12864,15 @@ inline bool XM_CALLCONV XMVector4EqualInt
     uint8x8x2_t vTemp = vzip_u8(vget_low_u8(vreinterpretq_u8_u32(vResult)), vget_high_u8(vreinterpretq_u8_u32(vResult)));
     uint16x4x2_t vTemp2 = vzip_u16(vreinterpret_u16_u8(vTemp.val[0]), vreinterpret_u16_u8(vTemp.val[1]));
     return (vget_lane_u32(vreinterpret_u32_u16(vTemp2.val[1]), 1) == 0xFFFFFFFFU);
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128i vTemp = _mm_cmpeq_epi32(_mm_castps_si128(V1), _mm_castps_si128(V2));
     return ((_mm_movemask_ps(_mm_castsi128_ps(vTemp)) == 0xf) != 0);
+#elif defined(_XM_SSE_INTRINSICS_)
+    alignas(16) uint32_t data0[4];
+    alignas(16) uint32_t data1[4];
+    _mm_store_ps(reinterpret_cast<float*>(data0), V1);
+    _mm_store_ps(reinterpret_cast<float*>(data1), V2);
+    return (((data0[0] == data1[0]) && (data0[1] == data1[1]) && (data0[2] == data1[2]) && (data0[3] == data1[3])) != 0);
 #else
     return XMComparisonAllTrue(XMVector4EqualIntR(V1, V2));
 #endif
