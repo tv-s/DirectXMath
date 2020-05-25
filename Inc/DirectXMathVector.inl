@@ -12920,7 +12920,7 @@ inline uint32_t XM_CALLCONV XMVector4EqualIntR
         CR = XM_CRMASK_CR6FALSE;
     }
     return CR;
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     __m128i vTemp = _mm_cmpeq_epi32(_mm_castps_si128(V1), _mm_castps_si128(V2));
     int iTest = _mm_movemask_ps(_mm_castsi128_ps(vTemp));
     uint32_t CR = 0;
@@ -12929,6 +12929,27 @@ inline uint32_t XM_CALLCONV XMVector4EqualIntR
         CR = XM_CRMASK_CR6TRUE;
     }
     else if (iTest == 0)  // All not equal?
+    {
+        CR = XM_CRMASK_CR6FALSE;
+    }
+    return CR;
+#elif defined(_XM_SSE_INTRINSICS_)
+    alignas(16) uint32_t data0[4];
+    alignas(16) uint32_t data1[4];
+    _mm_store_ps(reinterpret_cast<float*>(data0), V1);
+    _mm_store_ps(reinterpret_cast<float*>(data1), V2);
+    uint32_t CR = 0u;
+    if (data0[0] == data1[0] &&
+        data0[1] == data1[1] &&
+        data0[2] == data1[2] &&
+        data0[3] == data1[3])
+    {
+        CR = XM_CRMASK_CR6TRUE;
+    }
+    else if (data0[0] != data1[0] &&
+        data0[1] != data1[1] &&
+        data0[2] != data1[2] &&
+        data0[3] != data1[3])
     {
         CR = XM_CRMASK_CR6FALSE;
     }
