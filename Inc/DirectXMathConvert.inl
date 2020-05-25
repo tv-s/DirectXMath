@@ -1505,10 +1505,16 @@ inline void XM_CALLCONV XMStoreFloat3
     * reinterpret_cast<int*>(&pDestination->x) = _mm_extract_ps(V, 0);
     *reinterpret_cast<int*>(&pDestination->y) = _mm_extract_ps(V, 1);
     *reinterpret_cast<int*>(&pDestination->z) = _mm_extract_ps(V, 2);
-#elif defined(_XM_SSE_INTRINSICS_)
+#elif defined(_XM_SSE2_INTRINSICS_)
     _mm_store_sd(reinterpret_cast<double*>(pDestination), _mm_castps_pd(V));
     __m128 z = XM_PERMUTE_PS(V, _MM_SHUFFLE(2, 2, 2, 2));
     _mm_store_ss(&pDestination->z, z);
+#elif defined(_XM_SSE_INTRINSICS_)
+    alignas(16) float data[4];
+    _mm_store_ps(data, V);
+    pDestination->x = data[0];
+    pDestination->y = data[1];
+    pDestination->z = data[2];
 #endif
 }
 
